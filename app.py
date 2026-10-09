@@ -70,6 +70,45 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise RuntimeError('O OpenRouter redirecionou a requisição; operação interrompida.')
 
+class OpenRouterError(RuntimeError):
+    def __init__(self, code, message, submission_rejected=False):
+        super().__init__(message)
+        self.code = code
+        self.submission_rejected = submission_rejected
+
+def safe_provider_detail(data, prompt=None):
+    def message(value):
+        if not isinstance(value, dict):
+            return ''
+        error = value.get('error')
+        if isinstance(error, dict):
+            result = error.get('message')
+        elif isinstance(error, str):
+            result = error
+        else:
+            result = value.get('message') or value.get('detail')
+        return result if isinstance(result, str) else ''
+    details = [message(data)]
+    error = data.get('error') if isinstance(data, dict) else None
+    metadata = error.get('metadata') if isinstance(error, dict) else None
+    raw = metadata.get('raw') if isinstance(metadata, dict) else None
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except (ValueError, TypeError):
+            raw = None
+    if isinstance(raw, dict):
+        details.append(message(raw))
+    text = ' / '.join(dict.fromkeys(value for value in details if value))
+    key = os.environ.get('OPENROUTER_API_KEY')
+    if key:
+        text = text.replace(key, '[CHAVE OCULTA]')
+    text = re.sub(r'sk-or-v1-[A-Za-z0-9_-]+', '[CHAVE OCULTA]', text)
+    text = re.sub(r'(?i)Bearer\s+[^\s\"\',;]+', 'Bearer [CHAVE OCULTA]', text)
+    if isinstance(prompt, str) and prompt:
+        text = text.replace(prompt, '[PROMPT]')
+    return ' '.join(text.split())[:1000]
+
 def api(path, payload=None, output=None, authenticated=True):
     headers = {'Accept': 'video/mp4' if output else 'application/json'}
     if authenticated:
@@ -92,9 +131,20 @@ def api(path, payload=None, output=None, authenticated=True):
                 raise ValueError('Resposta inválida do OpenRouter.')
             return data
     except urllib.error.HTTPError as exc:
-        hints = {401: 'chave inválida', 402: 'saldo insuficiente', 403: 'acesso negado',
-                 404: 'recurso indisponível', 429: 'limite de requisições atingido'}
-        raise RuntimeError(f'OpenRouter HTTP {exc.code}: {hints.get(exc.code, "serviço indisponível")}.') from None
+        hints = {400: 'pedido inválido; confira os parâmetros e as regras do modelo',
+                 401: 'chave inválida', 402: 'saldo insuficiente', 403: 'acesso negado',
+                 404: 'recurso indisponível', 422: 'parâmetros inválidos',
+                 429: 'limite de requisições atingido'}
+        try:
+            data = json.loads(exc.read(65536))
+            detail = safe_provider_detail(data, payload.get('prompt') if isinstance(payload, dict) else None)
+        except (ValueError, TypeError, OSError):
+            detail = ''
+        finally:
+            exc.close()
+        text = f'OpenRouter HTTP {exc.code}: {detail or hints.get(exc.code, "serviço indisponível")}.'
+        rejected = exc.code == 400 and path == '/videos' and payload is not None
+        raise OpenRouterError(exc.code, text, submission_rejected=rejected) from None
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, UnicodeError):
         raise RuntimeError('Não foi possível concluir a comunicação com o OpenRouter.') from None
 
@@ -334,6 +384,9 @@ class JobStore:
                 api('/videos/' + provider_id + '/content?index=0', output=target)
             self.update(identifier, status='ready')
         except Exception as exc:
+            if isinstance(exc, OpenRouterError) and exc.submission_rejected and not self.jobs[identifier].get('remote_id'):
+                self.update(identifier, status='rejected', error=str(exc) + ' O pedido foi rejeitado pela API e não foi repetido. Corrija o motivo informado antes de enviar outro.')
+                return
             known = bool(self.jobs[identifier].get('remote_id'))
             message = str(exc) if isinstance(exc, (ValueError, RuntimeError)) else 'Falha local ou de rede; consulte o trabalho antes de reenviar.'
             if not known and not submission_attempted:
@@ -381,7 +434,7 @@ HTML = r'''<!doctype html>
 <script>
 'use strict';
 const csrf='__CSRF__', $=id=>document.getElementById(id);
-const labels={moderating:'Verificando prompt',blocked:'Prompt bloqueado',submitting:'Enviando ao modelo',pending:'Na fila',in_progress:'Gerando vídeo',completed:'Vídeo concluído',downloading:'Baixando MP4',ready:'Pronto para assistir',error:'Erro no trabalho',unknown:'Envio não confirmado',failed:'Geração falhou',cancelled:'Cancelado',expired:'Expirou'};
+const labels={moderating:'Verificando prompt',blocked:'Prompt bloqueado',submitting:'Enviando ao modelo',pending:'Na fila',in_progress:'Gerando vídeo',completed:'Vídeo concluído',downloading:'Baixando MP4',ready:'Pronto para assistir',error:'Erro no trabalho',rejected:'Pedido rejeitado pela API',unknown:'Envio não confirmado',failed:'Geração falhou',cancelled:'Cancelado',expired:'Expirou'};
 const activeStates=['moderating','submitting','pending','in_progress','completed','downloading','unknown'];
 let models=[], selected=null, requestId=crypto.randomUUID(), busy=false, checking=false, pendingId=null, uncertain=false, available=false, verdict=null, checkVersion=0, refreshing=false;
 async function call(path,body){const response=await fetch(path,{method:body===undefined?'GET':'POST',headers:body===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:body===undefined?undefined:JSON.stringify(body)});let data;try{data=await response.json()}catch(_){const error=Error('O servidor não retornou uma resposta válida.');error.status=response.ok?502:response.status;throw error}if(!response.ok){const error=Error(data.error||'Não foi possível concluir a operação.');error.status=response.status;throw error}return data}

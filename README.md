@@ -46,6 +46,8 @@ A política permite romance e intimidade não explícita entre adultos, nudez ar
 
 Se a geração com ID confirmado for interrompida, use **Retomar**. Isso consulta o trabalho existente sem enviar outro POST de geração. Um envio não confirmado exige consultar sua conta OpenRouter antes de gerar novamente. Recarregar a página e enviar outro pedido pode criar outra cobrança.
 
+Um HTTP 400 no POST de vídeo aparece como **Pedido rejeitado pela API**, com a mensagem estruturada do OpenRouter/provedor quando disponível. Corrija o motivo informado antes de enviar outro pedido. A chave e o prompt completo são ocultados na mensagem; respostas brutas de diagnóstico não são exibidas. Falhas de rede e erros de servidor continuam tratados como envios possivelmente interrompidos, sem repetição automática.
+
 ## Certificados no Mac
 
 O programa preserva a verificação TLS e usa `certifi` automaticamente no Mac se estiver disponível. Caso seu Python ainda tenha erro de certificado e `certifi` esteja instalado, configure no mesmo Terminal:
@@ -56,6 +58,6 @@ export SSL_CERT_FILE="$(python3 -c 'import certifi; print(certifi.where())')"
 
 ## Validação
 
-26 testes HTTP com API simulada passaram, incluindo aprovação, bloqueio, resposta inválida, envio único, retomada, download e origem. O navegador Chromium também validou reprodução, download, recuperação de resposta interrompida e layout de celular. O catálogo público real foi consultado. Nenhuma chamada real autenticada de verificação ou geração paga foi executada no ambiente de desenvolvimento: a chave não está configurada nele. A precisão do classificador e a qualidade dos vídeos não foram validadas.
+38 testes HTTP com API simulada passaram, incluindo aprovação, bloqueio, resposta inválida, envio único, retomada, download, origem, diagnóstico do HTTP 400 e ocultação de dados sensíveis. O navegador Chromium também validou reprodução, download, recuperação de resposta interrompida e layout de celular. O catálogo público real foi consultado. Nenhuma chamada real autenticada de verificação ou geração paga foi executada no ambiente de desenvolvimento: a chave não está configurada nele. A precisão do classificador e a qualidade dos vídeos não foram validadas.
 
 Mais detalhes estão em [INTERFACE.md](INTERFACE.md).

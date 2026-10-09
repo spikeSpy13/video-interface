@@ -40,7 +40,9 @@ Se um trabalho com ID confirmado sofrer interrupção, clique em **Retomar**. Is
 
 ## Validação realizada
 
-26 testes HTTP com provedor simulado passaram: verificação antes do vídeo, recusa, falha de rede, JSON inválido, consistência e completude do veredito, interrupção antes do envio, parâmetros do catálogo, proteção de origem, envio único, retomada e download por faixas.
+38 testes HTTP com provedor simulado passaram: verificação antes do vídeo, recusa, falha de rede, JSON inválido, consistência e completude do veredito, interrupção antes do envio, parâmetros do catálogo, proteção de origem, envio único, retomada, download por faixas, diagnóstico de erros HTTP e ocultação de dados sensíveis.
+
+HTTP 400 em uma criação de vídeo significa pedido rejeitado: a página mostra a mensagem estruturada do provedor quando disponível. Falhas de rede continuam identificadas como envios possivelmente interrompidos, sem repetição automática. A mensagem detalhada de um erro antigo descartada por uma versão anterior não pode ser recuperada do histórico local.
 
 O fluxo também passou no Chromium com um MP4 real de teste: verificação sem criar vídeo, bloqueio, descarte de respostas antigas após editar o texto, recuperação de resposta interrompida sem duplicar geração, reprodução, download idêntico, resolução máxima do catálogo, recuperação de falha do catálogo e layout em 320 pixels sem rolagem horizontal. Nenhuma exceção JavaScript ocorreu.
 

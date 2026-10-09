@@ -23,6 +23,12 @@ export SSL_CERT_FILE="$(python3 -c 'import certifi; print(certifi.where())')"
 
 ## Usar a página
 
+**Configurar características do plano** leva ao formulário com dez seções e todas as propriedades do roteiro. Abra uma seção para escolher opções e escrever os complementos nos campos livres. Os itens marcados como múltiplos permitem várias escolhas. **Não definido** é omitido, e o complemento sozinho também pode entrar no texto. **Significado na cena** permanece como anotação pessoal fora do prompt.
+
+Clique em **Acrescentar ao prompt** no final para juntar as escolhas ao texto existente. O botão não verifica nem gera vídeo; você pode revisar o texto e depois usar os botões de verificação e geração. Um bloco idêntico não é duplicado. Cada alteração do texto invalida o veredito anterior, incluindo uma verificação ainda em andamento.
+
+As opções de duração acompanham o catálogo do modelo. Ao acrescentar uma duração válida, o app também ajusta o parâmetro da geração. Um valor livre em quadros precisa informar FPS, por exemplo `192 quadros a 24 fps`. Não use minutos ou milissegundos como se fossem segundos. Uma duração inválida ou um prompt que ultrapassaria 20.000 caracteres deixa o texto e a configuração intactos.
+
 O catálogo do OpenRouter define as durações, resoluções, formatos e suporte a áudio. O modelo inicial é `google/veo-3.1-lite`, quando disponível, com o máximo de duração anunciado pelo modelo, 1080p se disponível, vertical 9:16 e sem áudio. Você pode trocar os parâmetros e modelos. A estimativa de vídeo só aparece quando há um SKU por segundo conhecido para a combinação; não inclui o custo de verificação. Os valores efetivos são os retornados pelo provedor.
 
 HeyGen Video 1 exige uma faixa de áudio: a página mantém **Com áudio (obrigatório)** selecionado e o servidor envia `generate_audio: true`. Para modelos com áudio opcional, você pode escolher **Sem áudio** ou **Com áudio**. Quando o modelo não permite configurar essa opção e não há uma regra específica confirmada, o app mostra **Definido pelo modelo** e omite `generate_audio` da requisição. O valor `false` no catálogo não significa, por si só, que a saída é silenciosa.
@@ -50,5 +56,7 @@ HTTP 400 em uma criação de vídeo significa pedido rejeitado: a página mostra
 O fluxo também passou no Chromium com um MP4 real de teste: verificação sem criar vídeo, bloqueio, descarte de respostas antigas após editar o texto, recuperação de resposta interrompida sem duplicar geração, reprodução, download idêntico, resolução máxima do catálogo, recuperação de falha do catálogo e layout em 320 pixels sem rolagem horizontal. Nenhuma exceção JavaScript ocorreu.
 
 A correção de áudio também passou no Chromium: HeyGen mantém áudio obrigatório inclusive no botão de máximos; modelos opcionais permitem escolher; os demais omitem a configuração. Cada geração simulada enviou um único POST, inclusive com cliques duplicados, e um HTTP 400 não provocou repetição automática.
+
+O formulário de plano passou no Chromium com todos os 63 campos, 62 propriedades exportáveis, oito seletores múltiplos e todas as opções conferidas contra o roteiro. A validação cobriu anexação, complementos isolados, anotação pessoal, caracteres HTML tratados como texto, cliques repetidos, blocos parcialmente semelhantes, duração em segundos/quadros, sincronização do parâmetro da geração, unidades inválidas, troca de modelo, limite de 20.000 caracteres, verificação antiga e em andamento, uso sem chave e tela de 320 pixels. Uma geração simulada recebeu o prompt completo e a duração de 6 segundos, sem chamadas externas.
 
 O catálogo público real foi consultado e confirmou Veo Lite com até 8 segundos e 1080p, além da disponibilidade do modelo de verificação. Esses dados não comprovam a disponibilidade para uma conta específica. Nenhuma geração paga ou chamada real autenticada de verificação foi executada: a chave não está configurada neste ambiente na nuvem. Para usar no Mac, forneça-a apenas no Terminal local.

@@ -409,11 +409,552 @@ class JobStore:
             with self.lock:
                 self.active.discard(identifier)
 
+SHOT_FIELD_GROUPS = [{'id': 'content',
+  'title': '1. Conteúdo e tipagem',
+  'fields': [{'id': 'content_subject',
+              'label': 'Tipo de sujeito',
+              'options': ['indivíduo',
+                          'dupla',
+                          'grupo pequeno',
+                          'multidão',
+                          'fileira ou coluna',
+                          'objeto',
+                          'detalhe de corpo',
+                          'animal',
+                          'máquina ou veículo',
+                          'arquitetura',
+                          'paisagem',
+                          'elemento natural']},
+             {'id': 'content_social_role',
+              'label': 'Papel social (tipagem)',
+              'options': ['operário',
+                          'camponês',
+                          'soldado',
+                          'marinheiro',
+                          'burguês ou aristocrata',
+                          'autoridade ou oficial',
+                          'policial',
+                          'religioso',
+                          'intelectual',
+                          'artista',
+                          'estudante',
+                          'médico',
+                          'comerciante',
+                          'pessoa comum']},
+             {'id': 'content_age',
+              'label': 'Idade aparente',
+              'options': ['criança', 'adolescente', 'jovem adulto', 'adulto', 'meia-idade', 'idoso']},
+             {'id': 'content_gender',
+              'label': 'Gênero aparente',
+              'options': ['masculino', 'feminino', 'misto']},
+             {'id': 'content_detail',
+              'label': 'Detalhe em foco',
+              'options': ['rosto',
+                          'olhos',
+                          'boca',
+                          'mãos',
+                          'punho erguido',
+                          'pés ou botas',
+                          'chapéu ou boné',
+                          'óculos',
+                          'ferramenta',
+                          'arma',
+                          'relógio',
+                          'bandeira',
+                          'objeto simbólico']},
+             {'id': 'content_posture',
+              'label': 'Postura',
+              'options': ['de pé',
+                          'sentado',
+                          'ajoelhado',
+                          'agachado',
+                          'curvado',
+                          'deitado',
+                          'braços erguidos',
+                          'mãos à cabeça',
+                          'apontando',
+                          'segurando um objeto']},
+             {'id': 'content_expression',
+              'label': 'Expressão',
+              'options': ['determinada',
+                          'cansada',
+                          'assustada',
+                          'furiosa',
+                          'serena',
+                          'desolada',
+                          'esperançosa',
+                          'atenta',
+                          'impassível',
+                          'extasiada']},
+             {'id': 'content_costume',
+              'label': 'Figurino',
+              'options': ['roupa de trabalho',
+                          'casaco pesado',
+                          'uniforme militar',
+                          'uniforme civil',
+                          'terno',
+                          'vestido',
+                          'trapos',
+                          'jaleco',
+                          'roupa de época']},
+             {'id': 'content_setting',
+              'label': 'Cenário',
+              'options': ['fábrica',
+                          'rua',
+                          'praça',
+                          'escadaria',
+                          'porto',
+                          'navio',
+                          'ponte',
+                          'campo aberto',
+                          'estrada',
+                          'interior de casa',
+                          'escritório',
+                          'igreja',
+                          'quartel',
+                          'estação de trem',
+                          'mina']},
+             {'id': 'content_elements',
+              'label': 'Elementos de cena',
+              'options': ['portão ou grade',
+                          'muro',
+                          'escada',
+                          'janela',
+                          'porta',
+                          'espelho',
+                          'máquinas',
+                          'chaminé',
+                          'bandeira',
+                          'faixa ou cartaz',
+                          'barricada',
+                          'veículo',
+                          'ferramentas',
+                          'armas',
+                          'papéis'],
+              'multiple': True},
+             {'id': 'content_meaning', 'label': 'Significado na cena', 'options': [], 'noteOnly': True}],
+  'description': 'Papel social: complemente com figurino e postura visíveis. Detalhe em foco: use quando o '
+                 'sujeito for um detalhe. Significado na cena é uma anotação e não entra no prompt.'},
+ {'id': 'scale',
+  'title': '2. Escala',
+  'fields': [{'id': 'scale_primary',
+              'label': 'Escala principal',
+              'options': ['grande plano geral',
+                          'plano geral',
+                          'plano de conjunto',
+                          'plano médio',
+                          'plano americano',
+                          'primeiro plano',
+                          'primeiríssimo plano',
+                          'plano detalhe']},
+             {'id': 'scale_secondary',
+              'label': 'Escala secundária',
+              'options': ['grande plano geral',
+                          'plano geral',
+                          'plano de conjunto',
+                          'plano médio',
+                          'plano americano',
+                          'primeiro plano',
+                          'primeiríssimo plano',
+                          'plano detalhe']},
+             {'id': 'scale_secondary_position',
+              'label': 'Posição da escala secundária',
+              'options': ['primeiro plano', 'fundo']}],
+  'description': 'Use a escala secundária para ter duas escalas no mesmo quadro.'},
+ {'id': 'angle',
+  'title': '3. Ângulo',
+  'fields': [{'id': 'angle_height',
+              'label': 'Altura da câmera',
+              'options': ['nível do olhar',
+                          'plongée leve',
+                          'plongée acentuado',
+                          'contra-plongée leve',
+                          'contra-plongée acentuado',
+                          'zenital (olhando reto para baixo)',
+                          'nadir (olhando reto para cima)',
+                          'rente ao chão']},
+             {'id': 'angle_tilt',
+              'label': 'Inclinação lateral',
+              'options': ['sem inclinação', 'plano holandês leve', 'plano holandês acentuado']},
+             {'id': 'angle_orientation',
+              'label': 'Orientação em relação ao sujeito',
+              'options': ['frontal',
+                          'três quartos',
+                          'perfil',
+                          'três quartos de costas',
+                          'de costas',
+                          'sobre o ombro']},
+             {'id': 'angle_viewpoint',
+              'label': 'Ponto de vista',
+              'options': ['objetivo (observador)',
+                          'subjetivo (olhar de um personagem)',
+                          'de um objeto ou veículo']}]},
+ {'id': 'composition',
+  'title': '4. Composição',
+  'fields': [{'id': 'composition_focal_position',
+              'label': 'Posição do ponto focal',
+              'options': ['centro',
+                          'terço esquerdo',
+                          'terço direito',
+                          'parte superior',
+                          'parte inferior',
+                          'canto']},
+             {'id': 'composition_balance',
+              'label': 'Equilíbrio',
+              'options': ['simétrico', 'assimétrico equilibrado', 'assimétrico tenso']},
+             {'id': 'composition_dominant_line',
+              'label': 'Linha dominante',
+              'options': ['horizontal',
+                          'vertical',
+                          'diagonal ascendente (esquerda → direita)',
+                          'diagonal descendente (esquerda → direita)',
+                          'diagonais cruzadas',
+                          'curva',
+                          'convergente',
+                          'circular',
+                          'zigue-zague']},
+             {'id': 'composition_opposing_line',
+              'label': 'Linha em oposição',
+              'options': ['horizontal',
+                          'vertical',
+                          'diagonal ascendente (esquerda → direita)',
+                          'diagonal descendente (esquerda → direita)',
+                          'diagonais cruzadas',
+                          'curva',
+                          'convergente',
+                          'circular',
+                          'zigue-zague']},
+             {'id': 'composition_foreground',
+              'label': 'Primeiro plano',
+              'options': ['nada',
+                          'silhueta',
+                          'objeto próximo',
+                          'figura em close',
+                          'elemento que emoldura',
+                          'elemento que obstrui parcialmente']},
+             {'id': 'composition_middle',
+              'label': 'Plano médio',
+              'options': ['sujeito principal', 'grupo', 'multidão', 'objeto principal', 'arquitetura']},
+             {'id': 'composition_background',
+              'label': 'Fundo',
+              'options': ['céu',
+                          'muro',
+                          'arquitetura',
+                          'paisagem',
+                          'horizonte',
+                          'multidão',
+                          'máquinas',
+                          'fumaça',
+                          'fundo neutro',
+                          'escuridão']},
+             {'id': 'composition_empty_space',
+              'label': 'Espaço vazio',
+              'options': ['nenhum (quadro cheio)',
+                          'acima',
+                          'abaixo',
+                          'à esquerda',
+                          'à direita',
+                          'à frente do olhar',
+                          'ao redor do sujeito']},
+             {'id': 'composition_framing',
+              'label': 'Recursos de enquadramento',
+              'options': ['quadro dentro do quadro (porta / janela / arco)',
+                          'elemento em primeiro plano que emoldura',
+                          'silhueta',
+                          'reflexo (espelho / água / vidro)',
+                          'repetição de padrão (fileiras / grades / colunas)',
+                          'sobreposição de elementos'],
+              'multiple': True},
+             {'id': 'composition_edges',
+              'label': 'Limites do quadro',
+              'options': ['sujeito cortado pela borda',
+                          'elemento que entra por uma borda',
+                          'multidão que extrapola o quadro',
+                          'pouco espaço acima da cabeça',
+                          'muito espaço acima da cabeça'],
+              'multiple': True}],
+  'description': 'Linha em oposição registra o conflito dentro do plano.'},
+ {'id': 'light',
+  'title': '5. Luz',
+  'fields': [{'id': 'light_direction',
+              'label': 'Direção',
+              'options': ['frontal',
+                          'lateral',
+                          'três quartos',
+                          'contraluz',
+                          'de cima',
+                          'de baixo',
+                          'rasante']},
+             {'id': 'light_quality',
+              'label': 'Qualidade',
+              'options': ['dura', 'suave', 'difusa', 'focada (spot)']},
+             {'id': 'light_contrast', 'label': 'Contraste', 'options': ['alto', 'médio', 'baixo']},
+             {'id': 'light_tonality',
+              'label': 'Tonalidade geral',
+              'options': ['clara (high-key)', 'média', 'escura (low-key)']},
+             {'id': 'light_source',
+              'label': 'Fonte',
+              'options': ['sol',
+                          'sol baixo',
+                          'céu nublado',
+                          'lua',
+                          'lâmpada',
+                          'lampião ou vela',
+                          'fogo',
+                          'neon',
+                          'janela',
+                          'holofote',
+                          'farol de veículo',
+                          'tela luminosa',
+                          'fresta de luz'],
+              'multiple': True},
+             {'id': 'light_time',
+              'label': 'Hora do dia',
+              'options': ['amanhecer', 'manhã', 'meio-dia', 'tarde', 'entardecer', 'noite']},
+             {'id': 'light_shadows',
+              'label': 'Sombras',
+              'options': ['sem sombras marcadas',
+                          'longas',
+                          'curtas',
+                          'em padrão (grades / listras / venezianas)',
+                          'silhueta']},
+             {'id': 'light_atmosphere',
+              'label': 'Atmosfera',
+              'options': ['nenhuma', 'névoa', 'fumaça', 'vapor', 'poeira', 'chuva', 'neve', 'fuligem'],
+              'multiple': True},
+             {'id': 'light_temperature',
+              'label': 'Temperatura da luz',
+              'options': ['neutra', 'quente', 'fria', 'mista']}]},
+ {'id': 'motion',
+  'title': '6. Movimento dentro do quadro',
+  'fields': [{'id': 'motion_1_who',
+              'label': 'Movimento 1 · Quem se move',
+              'options': ['sujeito principal',
+                          'grupo ou multidão',
+                          'figuras secundárias',
+                          'fundo (nuvens / fumaça / água)',
+                          'objeto',
+                          'veículo ou máquina',
+                          'ninguém (quadro estático)']},
+             {'id': 'motion_1_type',
+              'label': 'Movimento 1 · Tipo de movimento',
+              'options': ['caminhar',
+                          'marchar',
+                          'correr',
+                          'avançar',
+                          'recuar',
+                          'subir',
+                          'descer',
+                          'cair',
+                          'erguer',
+                          'girar',
+                          'tremer',
+                          'balançar',
+                          'fluir']},
+             {'id': 'motion_1_direction',
+              'label': 'Movimento 1 · Direção',
+              'options': ['esquerda → direita',
+                          'direita → esquerda',
+                          'ascendente',
+                          'descendente',
+                          'em direção à câmera',
+                          'afastando-se da câmera',
+                          'diagonal ascendente',
+                          'diagonal descendente',
+                          'circular',
+                          'convergindo para um ponto',
+                          'dispersando-se']},
+             {'id': 'motion_1_speed',
+              'label': 'Movimento 1 · Velocidade',
+              'options': ['muito lenta',
+                          'lenta',
+                          'normal',
+                          'rápida',
+                          'muito rápida',
+                          'acelerando',
+                          'desacelerando']},
+             {'id': 'motion_1_quality',
+              'label': 'Movimento 1 · Qualidade',
+              'options': ['fluido', 'ritmado (em pulsos)', 'brusco', 'trêmulo', 'caótico']},
+             {'id': 'motion_2_who',
+              'label': 'Movimento 2 · Quem se move',
+              'options': ['sujeito principal',
+                          'grupo ou multidão',
+                          'figuras secundárias',
+                          'fundo (nuvens / fumaça / água)',
+                          'objeto',
+                          'veículo ou máquina',
+                          'ninguém (quadro estático)']},
+             {'id': 'motion_2_type',
+              'label': 'Movimento 2 · Tipo de movimento',
+              'options': ['caminhar',
+                          'marchar',
+                          'correr',
+                          'avançar',
+                          'recuar',
+                          'subir',
+                          'descer',
+                          'cair',
+                          'erguer',
+                          'girar',
+                          'tremer',
+                          'balançar',
+                          'fluir']},
+             {'id': 'motion_2_direction',
+              'label': 'Movimento 2 · Direção',
+              'options': ['esquerda → direita',
+                          'direita → esquerda',
+                          'ascendente',
+                          'descendente',
+                          'em direção à câmera',
+                          'afastando-se da câmera',
+                          'diagonal ascendente',
+                          'diagonal descendente',
+                          'circular',
+                          'convergindo para um ponto',
+                          'dispersando-se']},
+             {'id': 'motion_2_speed',
+              'label': 'Movimento 2 · Velocidade',
+              'options': ['muito lenta',
+                          'lenta',
+                          'normal',
+                          'rápida',
+                          'muito rápida',
+                          'acelerando',
+                          'desacelerando']},
+             {'id': 'motion_2_quality',
+              'label': 'Movimento 2 · Qualidade',
+              'options': ['fluido', 'ritmado (em pulsos)', 'brusco', 'trêmulo', 'caótico']},
+             {'id': 'motion_evolution',
+              'label': 'Evolução ao longo do plano',
+              'options': ['permanece igual',
+                          'intensifica',
+                          'acalma',
+                          'aproxima do alvo',
+                          'afasta do alvo',
+                          'enche o quadro',
+                          'esvazia o quadro',
+                          'culmina em clímax']}],
+  'description': 'Movimento 2 é opcional e pode registrar um movimento em sentido oposto ao primeiro. No '
+                 'complemento de Evolução, descreva o estado inicial e o final.'},
+ {'id': 'duration',
+  'title': '7. Duração',
+  'fields': [{'id': 'duration_length', 'label': 'Duração', 'options': [], 'duration': True}],
+  'description': 'As opções seguem as durações suportadas pelo modelo de vídeo. Use o complemento para '
+                 'especificar segundos ou quadros, respeitando os limites do modelo.'},
+ {'id': 'camera',
+  'title': '8. Movimento de câmera',
+  'fields': [{'id': 'camera_type',
+              'label': 'Tipo',
+              'options': ['fixa',
+                          'panorâmica horizontal',
+                          'panorâmica vertical (tilt)',
+                          'travelling',
+                          'grua',
+                          'zoom',
+                          'órbita em torno do sujeito',
+                          'câmera na mão',
+                          'Steadicam',
+                          'aérea (drone)',
+                          'travelling compensado (efeito Vertigo)']},
+             {'id': 'camera_direction',
+              'label': 'Sentido',
+              'options': ['esquerda',
+                          'direita',
+                          'para a frente (aproximando)',
+                          'para trás (afastando)',
+                          'para cima',
+                          'para baixo',
+                          'em torno no sentido horário',
+                          'em torno no sentido anti-horário']},
+             {'id': 'camera_speed',
+              'label': 'Velocidade',
+              'options': ['lenta', 'média', 'rápida', 'acelerando', 'desacelerando']},
+             {'id': 'camera_relationship',
+              'label': 'Relação com o sujeito',
+              'options': ['acompanha',
+                          'antecipa',
+                          'revela algo novo',
+                          'abandona o sujeito (passa a outro)',
+                          'independente']},
+             {'id': 'camera_stability',
+              'label': 'Estabilidade',
+              'options': ['suave e estável', 'leve tremor', 'instável']}]},
+ {'id': 'lens',
+  'title': '9. Lente e foco',
+  'fields': [{'id': 'lens_type',
+              'label': 'Lente',
+              'options': ['grande-angular extrema (≈14–20 mm)',
+                          'grande-angular (≈24–35 mm)',
+                          'normal (≈40–50 mm)',
+                          'teleobjetiva (≈85–135 mm)',
+                          'teleobjetiva longa (≥200 mm)',
+                          'macro',
+                          'olho de peixe',
+                          'anamórfica']},
+             {'id': 'lens_depth',
+              'label': 'Profundidade de campo',
+              'options': ['grande (tudo nítido)', 'média', 'rasa (fundo desfocado)', 'muito rasa']},
+             {'id': 'lens_focus',
+              'label': 'Ponto de foco',
+              'options': ['sujeito principal', 'primeiro plano', 'fundo', 'um detalhe']},
+             {'id': 'lens_focus_change',
+              'label': 'Mudança de foco',
+              'options': ['nenhuma',
+                          'do primeiro plano para o fundo',
+                          'do fundo para o primeiro plano',
+                          'de um sujeito para outro']}]},
+ {'id': 'texture',
+  'title': '10. Cor e textura',
+  'fields': [{'id': 'texture_color',
+              'label': 'Cor',
+              'options': ['preto e branco',
+                          'preto e branco de alto contraste',
+                          'colorido naturalista',
+                          'colorido saturado',
+                          'dessaturado',
+                          'monocromático',
+                          'sépia']},
+             {'id': 'texture_palette',
+              'label': 'Paleta',
+              'options': ['quente',
+                          'fria',
+                          'terrosa',
+                          'pastel',
+                          'desbotada',
+                          'neon',
+                          'complementar (azul × laranja)'],
+              'multiple': True},
+             {'id': 'texture_grain',
+              'label': 'Grão e textura da imagem',
+              'options': ['limpa (digital)',
+                          'grão fino',
+                          'grão grosso',
+                          'filme antigo (arranhões e poeira)']},
+             {'id': 'texture_finish',
+              'label': 'Acabamento',
+              'options': ['vinheta', 'halo suave nas altas luzes', 'tremulação de projetor'],
+              'multiple': True},
+             {'id': 'texture_materials',
+              'label': 'Materiais e superfícies',
+              'options': ['molhado com reflexos',
+                          'fuligem e sujeira',
+                          'poeira',
+                          'ferrugem',
+                          'pedra',
+                          'madeira',
+                          'metal',
+                          'tecido áspero',
+                          'vidro'],
+              'multiple': True}],
+  'description': 'Use Paleta quando a imagem for colorida.'}]
+
 HTML = r'''<!doctype html>
 <html lang="pt-BR">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Estúdio de vídeo · OpenRouter</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1118;--panel:#151b25;--line:#2a3342;--text:#edf1f8;--muted:#a6b0c1;--accent:#b9f479;--purple:#c3b4ff}*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,select,textarea{font:inherit}button,a,select,textarea{outline-offset:4px}button:focus-visible,a:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent)}main{max-width:1180px;padding:28px 28px 50px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;padding-bottom:26px;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:-.3px}.mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent);color:#18240e;font-size:20px}.tag{color:var(--muted);font-size:12px}.intro{margin:32px 0 24px}.eyebrow{font-size:11px;letter-spacing:1.8px;color:var(--accent);font-weight:700;text-transform:uppercase}h1{font-size:clamp(28px,4vw,40px);letter-spacing:-1.5px;line-height:1.15;margin:10px 0}p{color:var(--muted);margin:8px 0}h2{font-size:18px;letter-spacing:-.3px;margin:0}h3{font-size:14px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:22px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px;min-width:0}.panel-heading{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}.step{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:100px;padding:4px 10px;white-space:nowrap}.label-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.label-row label{margin-top:0}label{display:block;margin:15px 0 7px;font-size:13px;font-weight:600}.hint{font-size:12px;color:var(--muted)}select,textarea{width:100%;border:1px solid #3a4558;border-radius:10px;background:#0f1520;color:var(--text);padding:11px 12px;min-width:0}select{height:44px}textarea{min-height:178px;resize:vertical;line-height:1.6;margin-bottom:4px}textarea::placeholder{color:#768397}.fields{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}.limits{margin-top:11px;font-size:12px;line-height:1.7;color:var(--muted);overflow-wrap:anywhere}.button{border:1px solid #404d62;background:#202a39;color:var(--text);border-radius:10px;padding:11px 14px;cursor:pointer;font-weight:650;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px}.button:hover:not(:disabled){background:#2a374a}.button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--accent);color:#16210c;border-color:var(--accent)}.primary:hover:not(:disabled){background:#cef8a2}.text-button{background:none;border:0;padding:0;color:var(--purple);font:inherit;font-size:12px;cursor:pointer}.text-button:disabled{opacity:.45;cursor:not-allowed}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.notice{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);margin:14px 0 24px;min-height:22px}.notice button{margin-left:auto;flex-shrink:0}.notice[data-state="error"]{color:#ffc5be}.verdict{padding:12px 14px;border-radius:10px;background:#111824;border:1px solid var(--line);font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:12px}.verdict[data-state="allowed"]{border-color:#477c40;color:#c7f0b5;background:#15261a}.verdict[data-state="blocked"],.verdict[data-state="error"]{border-color:#8a4e49;color:#ffcec6;background:#2b191e}.fine{font-size:11px;line-height:1.6;margin-top:12px}.estimate{display:flex;justify-content:space-between;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}.estimate strong{color:var(--text);text-align:right}.screen{min-height:280px;border:1px solid var(--line);background:#0b1019;border-radius:12px;display:grid;place-items:center;margin:16px 0;overflow:hidden}.empty{max-width:250px;text-align:center;padding:32px 20px}.empty-icon{margin:auto auto 16px;width:56px;height:70px;border:1px solid #485774;border-radius:10px;display:grid;place-items:center;color:var(--purple);background:linear-gradient(150deg,#293045,#111823);font-size:23px}.empty p{font-size:12px}.screen:has(video:not([hidden])){background:#05070a}video{display:block;width:100%;max-height:500px;min-width:0}.download{width:100%;margin-bottom:16px}.status{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;margin:0}.status[data-state="blocked"]{color:#ffcec6}.history{margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}.history-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}.job{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}.job-info{min-width:0;flex:1}.job strong{font-size:13px}.job small{display:block;color:var(--muted);font-size:11px;overflow-wrap:anywhere}.job-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.job button{font-size:12px;padding:5px 10px;min-height:34px}.job-count{font-size:11px;color:var(--muted)}details{font-size:11px;color:var(--muted);margin-top:10px}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}footer{color:#7f8c9f;font-size:11px;margin-top:22px} @media(max-width:780px){main{padding:22px 18px 36px}.layout{grid-template-columns:1fr}.intro{margin-top:25px}.panel{padding:20px}.screen{min-height:230px}}@media(max-width:380px){main{padding:18px 12px 28px}.panel{padding:16px}.tag{display:none}.actions{grid-template-columns:1fr}.fields{gap:0 10px}.label-row{align-items:center}.step{padding:4px 7px}.job{gap:8px}.job-actions{max-width:85px}.estimate{font-size:12px}h1{letter-spacing:-1px}}
+.shot-builder{margin-top:22px}.shot-builder p{font-size:13px}.shot-group{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:0 16px;color:var(--text);font-size:13px}.shot-group>summary{font-weight:650;padding:14px 0;min-height:44px}.shot-row{padding:12px 0;border-top:1px solid var(--line)}.shot-row>label{margin:0 0 8px}.shot-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}.shot-controls input{font:inherit;width:100%;min-width:0;height:44px;border:1px solid #3a4558;border-radius:10px;background:#0f1520;color:var(--text);padding:11px 12px;outline-offset:4px}.shot-controls input:focus-visible{outline:2px solid var(--accent)}.shot-controls input::placeholder{color:#768397}.shot-controls select[multiple]{height:auto;min-height:118px;padding:7px}.shot-controls select[multiple] option{padding:5px}.shot-note{grid-template-columns:1fr}.shot-note textarea{min-height:90px}.shot-help{margin-top:7px}.shot-footer{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}.shot-footer p{flex:1;min-width:180px;margin:0}.shot-footer [data-state="error"]{color:#ffc5be}.shot-link{margin-top:9px}@media(max-width:600px){.shot-controls{grid-template-columns:1fr}.shot-group{padding:0 12px}.shot-footer .button{width:100%}}
 </style></head>
 <body><main>
 <header><div class="brand"><span class="mark" aria-hidden="true">▷</span>Estúdio de vídeo</div><span class="tag">OpenRouter · execução local</span></header>
@@ -423,6 +964,7 @@ HTML = r'''<!doctype html>
 <section class="panel" aria-labelledby="createTitle"><div class="panel-heading"><h2 id="createTitle">Sua ideia</h2><span class="step">01 · Criar</span></div>
 <form id="form"><div class="label-row"><label for="prompt">Prompt do vídeo</label><button id="sample" class="text-button" type="button">Usar exemplo</button></div>
 <textarea id="prompt" required maxlength="20000" placeholder="Descreva a cena, o produto, a luz e o movimento de câmera. Pode escrever em português ou inglês." aria-describedby="promptHint"></textarea><div id="promptHint" class="hint">Uma cena clara ajuda o modelo a seguir a sua ideia.</div>
+<div class="shot-link"><a id="shotJump" class="text-button" href="#shotBuilder">Configurar características do plano ↓</a></div>
 <label for="model">Modelo</label><select id="model" required disabled aria-describedby="limits"><option value="">Carregando…</option></select>
 <div id="limits" class="limits">Os limites aparecem após carregar o catálogo.</div>
 <div class="fields"><div><label for="duration">Duração</label><select id="duration" disabled></select></div><div><label for="resolution">Resolução</label><select id="resolution" disabled></select></div><div><label for="aspect_ratio">Formato</label><select id="aspect_ratio" disabled></select></div><div><label for="audio">Áudio</label><select id="audio" disabled><option value="false">Sem áudio</option><option value="true">Com áudio</option></select></div></div>
@@ -438,7 +980,13 @@ HTML = r'''<!doctype html>
 <div class="screen"><div id="empty" class="empty"><div class="empty-icon" aria-hidden="true">▷</div><h3>Uma ideia à espera de movimento</h3><p>Envie seu prompt para começar. Depois, assista e baixe o MP4 aqui.</p></div><video id="preview" controls playsinline preload="metadata" hidden></video></div>
 <a id="download" class="button primary download" hidden>Baixar vídeo MP4 ↓</a>
 <div class="history"><div class="history-heading"><h3>Histórico</h3><span id="jobCount" class="job-count"></span></div><p id="historyNotice" class="hint">Carregando trabalhos…</p><div id="jobs"></div></div>
-</section></div><footer>A chave fica no servidor local e não é enviada para o navegador.</footer>
+</section></div>
+<section id="shotBuilder" class="panel shot-builder" aria-labelledby="shotTitle" tabindex="-1">
+<div class="panel-heading"><h2 id="shotTitle">Características do plano</h2><span class="step">Opcional</span></div>
+<p>Abra as seções, escolha as opções e acrescente detalhes nos campos livres. “Não definido” fica fora do prompt; você também pode usar apenas o campo livre.</p>
+<div id="shotFields"></div>
+<div class="shot-footer"><button id="appendShot" class="button primary" type="button">Acrescentar ao prompt ↑</button><p id="shotStatus" class="hint" role="status" aria-live="polite">As características serão acrescentadas ao texto para você revisar antes de gerar.</p></div>
+</section><footer>A chave fica no servidor local e não é enviada para o navegador.</footer>
 </main>
 <script>
 'use strict';
@@ -453,7 +1001,7 @@ function setOptions(id,values){const list=Array.isArray(values)?values:[];$(id).
 function model(){return models.find(item=>item.id===$('model').value)}
 function maxValues(useHighestResolution=false){const m=model();if(!m)return;const durations=(m.supported_durations||[]).map(Number).filter(Number.isFinite);if(durations.length)$('duration').value=String(Math.max(...durations));const resolutions=m.supported_resolutions||[];if(resolutions.length){const best=!useHighestResolution&&resolutions.includes('1080p')?'1080p':[...resolutions].sort((a,b)=>resolutionRank(b)-resolutionRank(a))[0];$('resolution').value=best}const ratios=m.supported_aspect_ratios||[];if(ratios.length)$('aspect_ratio').value=ratios.includes('9:16')?'9:16':ratios[0];$('audio').value=m.audio_required===true?'true':m.generate_audio===true?'false':'default';updateEstimate()}
 function resolutionRank(value){if(/^4k$/i.test(value))return 2160;if(/^8k$/i.test(value))return 4320;return Number.parseInt(value,10)||0}
-function modelChanged(){const m=model();if(!m)return;setOptions('duration',m.supported_durations);setOptions('resolution',m.supported_resolutions);setOptions('aspect_ratio',m.supported_aspect_ratios);const audioOptions=m.audio_required===true?[new Option('Com áudio (obrigatório)','true')]:m.generate_audio===true?[new Option('Sem áudio','false'),new Option('Com áudio','true')]:[new Option('Definido pelo modelo','default')];$('audio').replaceChildren(...audioOptions);$('audio').disabled=m.audio_required===true||m.generate_audio!==true;$('maximum').disabled=false;maxValues();const ds=(m.supported_durations||[]).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);const durations=ds.length?ds.join(', ')+' segundos':'duração não informada';const resolutions=(m.supported_resolutions||[]).join(', ')||'resolução não informada';const ratios=(m.supported_aspect_ratios||[]).join(', ')||'formato não informado';$('limits').textContent='Limites: '+durations+' · '+resolutions+' · '+ratios+(m.audio_required===true?' · áudio obrigatório':m.generate_audio===true?' · áudio opcional':' · áudio definido pelo modelo');$('prices').textContent=JSON.stringify(m.pricing_skus??'Preços não informados pelo catálogo.',null,2)}
+function modelChanged(){const m=model();if(!m)return;setOptions('duration',m.supported_durations);setOptions('resolution',m.supported_resolutions);setOptions('aspect_ratio',m.supported_aspect_ratios);const audioOptions=m.audio_required===true?[new Option('Com áudio (obrigatório)','true')]:m.generate_audio===true?[new Option('Sem áudio','false'),new Option('Com áudio','true')]:[new Option('Definido pelo modelo','default')];$('audio').replaceChildren(...audioOptions);$('audio').disabled=m.audio_required===true||m.generate_audio!==true;$('maximum').disabled=false;maxValues();const ds=(m.supported_durations||[]).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);const durations=ds.length?ds.join(', ')+' segundos':'duração não informada';const resolutions=(m.supported_resolutions||[]).join(', ')||'resolução não informada';const ratios=(m.supported_aspect_ratios||[]).join(', ')||'formato não informado';$('limits').textContent='Limites: '+durations+' · '+resolutions+' · '+ratios+(m.audio_required===true?' · áudio obrigatório':m.generate_audio===true?' · áudio opcional':' · áudio definido pelo modelo');$('prices').textContent=JSON.stringify(m.pricing_skus??'Preços não informados pelo catálogo.',null,2);updateShotDuration()}
 function updateEstimate(){const m=model(), seconds=Number($('duration').value), resolution=$('resolution').value, audio=$('audio').value==='true', skus=m?.pricing_skus||{}, kind=audio?'with_audio':'without_audio';const keys=['duration_seconds_'+kind+'_'+resolution,'duration_seconds_'+kind];if(m?.generate_audio===false||m?.generate_audio==null)keys.push('duration_seconds_'+resolution,'duration_seconds');let rate=null;for(const key of keys){const raw=skus[key];if(raw!==undefined&&raw!==null&&raw!==''&&Number.isFinite(Number(raw))&&Number(raw)>=0){rate=Number(raw);break}}$('estimate').textContent=seconds>0&&rate!==null?'US$ '+(seconds*rate).toFixed(2)+' + verificação':'Consultar preço da combinação'}
 function show(job){selected=job.id;$('status').dataset.state=job.status;$('status').textContent=(labels[job.status]||job.status)+(job.error?'\n'+job.error:'')+(job.remote_id?'\nID: '+job.remote_id:'')+(job.cost!=null?'\nCusto informado: US$ '+job.cost:'');const ready=job.status==='ready';$('preview').hidden=$('download').hidden=!ready;$('empty').hidden=ready;if(ready){if($('preview').getAttribute('src')!==job.video_url)$('preview').src=job.video_url;$('download').href=job.download_url;$('download').download=job.id+'.mp4'}else{if($('preview').hasAttribute('src')){$('preview').pause();$('preview').removeAttribute('src');$('preview').load()}$('download').removeAttribute('href')}}
 async function refresh(){if(refreshing)return;refreshing=true;try{const rows=await call('/api/jobs');$('jobs').replaceChildren();$('jobCount').textContent=rows.length?String(rows.length):'';$('historyNotice').textContent=rows.length?'':'Você ainda não criou vídeos.';for(const job of rows){if(uncertain&&job.request_id===requestId){pendingId=job.id;selected=job.id;uncertain=false}if(job.id===pendingId&&!activeStates.includes(job.status)){pendingId=null;requestId=crypto.randomUUID()}const box=document.createElement('div');box.className='job';const info=document.createElement('div');info.className='job-info';const title=document.createElement('strong');title.textContent=labels[job.status]||job.status;const detail=document.createElement('small');detail.textContent=job.model+' · '+new Date(job.created_at*1000).toLocaleString('pt-BR');info.append(title,detail);const actions=document.createElement('div');actions.className='job-actions';const open=document.createElement('button');open.type='button';open.className='button';open.textContent='Ver';open.setAttribute('aria-label','Ver trabalho '+job.id);open.onclick=()=>show(job);actions.append(open);if(job.remote_id&&job.status==='error'&&!['failed','cancelled','expired'].includes(job.remote_status)){const resume=document.createElement('button');resume.type='button';resume.className='button';resume.textContent='Retomar';resume.onclick=async()=>{resume.disabled=true;try{show(await call('/api/jobs/'+job.id+'/resume',{}));await refresh()}catch(error){$('status').textContent=error.message}finally{resume.disabled=false}};actions.append(resume)}box.append(info,actions);$('jobs').append(box);if(job.id===selected)show(job)}if(!selected&&rows.length)show(rows[0]);toggle()}catch(error){$('historyNotice').textContent='Histórico indisponível: '+error.message}finally{refreshing=false}}
@@ -462,6 +1010,209 @@ $('check').onclick=async()=>{if(checking||busy||pendingId||uncertain||!available
 $('form').onsubmit=async event=>{event.preventDefault();if(busy||checking||pendingId||uncertain||!available||verdict?.allowed===false)return;busy=true;toggle();const body={model:$('model').value,prompt:$('prompt').value,request_id:requestId};if($('audio').value!=='default')body.generate_audio=$('audio').value==='true';for(const field of ['duration','resolution','aspect_ratio'])if($(field).value)body[field]=field==='duration'?Number($(field).value):$(field).value;try{const job=await call('/api/jobs',body);pendingId=job.id;show(job);await refresh()}catch(error){uncertain=!error.status||error.status>=500;await refresh();$('status').textContent=error.message+(uncertain?'\nConfira o histórico e seus trabalhos no OpenRouter antes de tentar outra geração.':'')}finally{busy=false;toggle()}};
 $('prompt').addEventListener('input',clearVerdict);$('model').onchange=modelChanged;$('maximum').onclick=()=>maxValues(true);for(const field of ['duration','resolution','aspect_ratio','audio'])$(field).onchange=updateEstimate;$('retry').onclick=loadModels;
 $('sample').onclick=()=>{$('prompt').value='Create an 8-second surreal luxury perfume commercial in vertical 9:16 format. A transparent glass perfume bottle floats just above black marble. Inside the bottle, tiny storm clouds swirl and miniature golden lightning bolts illuminate the liquid. Outside, water droplets rise upward instead of falling. Use one continuous, slow camera move around the bottle, keeping its shape consistent. End with a centered product shot as the storm suddenly becomes calm and the liquid glows softly. Photorealistic glass, realistic reflections, cinematic lighting, mysterious atmosphere. No text, no logos, no people.';clearVerdict();$('prompt').focus()};
+const shotFieldGroups=__SHOT_FIELDS__;
+
+function shotStatus(message, error=false){
+  $('shotStatus').textContent=message;
+  $('shotStatus').dataset.state=error?'error':'ok';
+}
+
+function renderShotFields(){
+  for(const group of shotFieldGroups){
+    const section=document.createElement('details');
+    section.className='shot-group';
+    section.id='shot-group-'+group.id;
+    const summary=document.createElement('summary');
+    summary.textContent=group.title;
+    section.append(summary);
+    if(group.description){
+      const description=document.createElement('p');
+      description.className='hint';
+      description.textContent=group.description;
+      section.append(description);
+    }
+    for(const field of group.fields){
+      const row=document.createElement('div');
+      row.className='shot-row';
+      row.dataset.field=field.id;
+      const label=document.createElement('label');
+      label.htmlFor='shot-'+field.id+(field.noteOnly?'-custom':'');
+      label.textContent=field.label;
+      row.append(label);
+      const controls=document.createElement('div');
+      controls.className='shot-controls';
+      const helpId='shot-'+field.id+'-help';
+      if(!field.noteOnly){
+        const select=document.createElement('select');
+        select.id='shot-'+field.id;
+        select.add(new Option('Não definido','',true,true));
+        for(const option of field.options)select.add(new Option(option,option));
+        if(field.multiple){
+          select.multiple=true;
+          select.size=4;
+          let wasUndefined=true;
+          select.addEventListener('change',()=>{
+            const empty=select.options[0];
+            const choices=[...select.options].slice(1);
+            if(empty.selected&&!wasUndefined){
+              for(const option of choices)option.selected=false;
+            }else if(choices.some(option=>option.selected)){
+              empty.selected=false;
+            }else{
+              empty.selected=true;
+            }
+            wasUndefined=empty.selected;
+          });
+        }
+        if(field.duration)select.disabled=true;
+        select.setAttribute('aria-describedby',helpId);
+        controls.append(select);
+      }
+      const free=document.createElement(field.noteOnly?'textarea':'input');
+      free.id='shot-'+field.id+'-custom';
+      free.maxLength=2000;
+      if(field.noteOnly){
+        free.rows=3;
+        free.placeholder='Anotação pessoal sobre a ideia que o plano deve carregar';
+        controls.classList.add('shot-note');
+      }else{
+        free.type='text';
+        free.placeholder=field.duration?'Ex.: 8 s ou 192 quadros a 24 fps':'Complemento livre (opcional)';
+        free.setAttribute('aria-label',field.label+' — complemento livre');
+      }
+      free.setAttribute('aria-describedby',helpId);
+      controls.append(free);
+      row.append(controls);
+      const help=document.createElement('div');
+      help.id=helpId;
+      help.className='hint shot-help';
+      help.textContent=field.noteOnly?'Anotação pessoal: não entra no prompt.':field.duration?
+        'As opções seguem o modelo escolhido. Para usar outro valor, selecione Não definido; quadros exigem FPS.':field.multiple?
+        'Várias opções: no computador, use Ctrl ou ⌘ para selecionar mais de uma.':
+        'Escolha uma opção, escreva um complemento ou use apenas o campo livre.';
+      row.append(help);
+      section.append(row);
+    }
+    $('shotFields').append(section);
+  }
+  updateShotDuration();
+}
+
+function shotDurations(){
+  return (model()?.supported_durations||[]).map(Number)
+    .filter(value=>Number.isInteger(value)&&value>0);
+}
+
+function updateShotDuration(){
+  const select=$('shot-duration_length');
+  if(!select)return;
+  const previous=select.value;
+  const durations=[...new Set(shotDurations())].sort((a,b)=>a-b);
+  select.replaceChildren(new Option('Não definido',''));
+  for(const duration of durations)select.add(new Option(duration+' s',String(duration)));
+  select.disabled=!durations.length;
+  if(previous&&durations.includes(Number(previous))){
+    select.value=previous;
+  }else if(previous){
+    shotStatus('A duração do plano foi desmarcada: o novo modelo não aceita esse valor.',true);
+  }
+}
+
+function shotDuration(selected, custom){
+  const supported=shotDurations();
+  if(!supported.length)throw Error('O modelo não informou durações. Deixe a duração do plano como Não definido e o complemento vazio.');
+  let value=selected?Number(selected):null;
+  let supplied=null;
+  if(custom){
+    const frames=custom.match(/^(\d+)\s*(?:quadros?|frames?)\s*(?:a|at|@)\s*(\d+(?:[.,]\d+)?)\s*fps\b/i);
+    if(frames){
+      const fps=Number(frames[2].replace(',','.'));
+      supplied=fps>0?Number(frames[1])/fps:NaN;
+    }else if(/^\d+\s*(?:quadros?|frames?)\b/i.test(custom)){
+      throw Error('Para duração em quadros, informe o FPS. Exemplo: 192 quadros a 24 fps.');
+    }else{
+      const timestamp=/^\d+(?::\d+){1,2}\s*$/.test(custom);
+      const seconds=!timestamp&&custom.match(/^(\d+(?:[.,]\d+)?)\s*(?:segundos?|seconds?|s)?(?:\s*[,;:—-]\s*.+)?\s*$/i);
+      if(seconds)supplied=Number(seconds[1].replace(',','.'));
+      else if(/^[+-]?\d/.test(custom))throw Error('Use segundos (ex.: 8 s) ou quadros com FPS. Separe uma descrição complementar com —, vírgula, ponto e vírgula ou dois-pontos.');
+      else if(value===null)throw Error('Informe a duração em segundos ou em quadros com FPS.');
+    }
+  }
+  if(supplied!==null){
+    const normalized=supported.find(duration=>Math.abs(duration-supplied)<1e-8);
+    if(normalized===undefined)throw Error('Duração não aceita pelo modelo. Valores disponíveis: '+supported.join(', ')+' s.');
+    if(value!==null&&value!==normalized)throw Error('A seleção e o complemento indicam durações diferentes. Selecione Não definido para usar o valor do campo livre.');
+    value=normalized;
+  }
+  if(!supported.includes(value))throw Error('Duração não aceita pelo modelo. Valores disponíveis: '+supported.join(', ')+' s.');
+  return value;
+}
+
+function buildShotPrompt(){
+  const sections=[];
+  let duration=null;
+  for(const group of shotFieldGroups){
+    const lines=[];
+    for(const field of group.fields){
+      if(field.noteOnly)continue;
+      const select=$('shot-'+field.id);
+      const choices=[...select.selectedOptions].map(option=>option.value).filter(Boolean);
+      const custom=$('shot-'+field.id+'-custom').value.trim();
+      if(!choices.length&&!custom)continue;
+      if(field.duration){
+        duration=shotDuration(choices[0],custom);
+        choices.splice(0,choices.length,duration+' s');
+      }
+      const selected=choices.join(', ');
+      const parts=[selected,custom===selected?'':custom].filter(Boolean);
+      lines.push(field.label+': '+parts.join(' — '));
+    }
+    if(lines.length)sections.push(group.title+'\n'+lines.join('\n'));
+  }
+  return {text:sections.length?'[Características do plano]\n'+sections.join('\n\n')+'\n[/Características do plano]':'',duration};
+}
+
+function appendShotPrompt(){
+  try{
+    const built=buildShotPrompt();
+    if(!built.text){
+      shotStatus('Escolha uma característica ou preencha um campo livre para acrescentar ao prompt.');
+      return;
+    }
+    const current=$('prompt').value;
+    if(current.includes(built.text)){
+      if(built.duration!==null){
+        $('duration').value=String(built.duration);
+        updateEstimate();
+      }
+      shotStatus('Estas características já estão no prompt.');
+      return;
+    }
+    const separator=current?(current.endsWith('\n\n')?'':current.endsWith('\n')?'\n':'\n\n'):'';
+    const next=current+separator+built.text;
+    if(next.length>$('prompt').maxLength)throw Error('O prompt ultrapassaria 20.000 caracteres. Reduza o texto ou os complementos antes de acrescentar.');
+    if(built.duration!==null){
+      $('duration').value=String(built.duration);
+      updateEstimate();
+    }
+    $('prompt').value=next;
+    clearVerdict();
+    shotStatus('Características acrescentadas ao prompt. Revise o texto antes de gerar.');
+    $('prompt').focus({preventScroll:true});
+    $('prompt').scrollIntoView({behavior:'smooth',block:'center'});
+  }catch(error){
+    shotStatus(error.message,true);
+  }
+}
+
+renderShotFields();
+$('appendShot').onclick=appendShotPrompt;
+$('shotJump').onclick=event=>{
+  event.preventDefault();
+  $('shotBuilder').focus({preventScroll:true});
+  $('shotBuilder').scrollIntoView({behavior:'smooth',block:'start'});
+};
+
 loadModels();refresh();setInterval(refresh,4000);
 </script></body></html>
 '''
@@ -493,7 +1244,7 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlsplit(self.path).path
         try:
             if path == '/':
-                content = HTML.replace('__CSRF__', self.server.csrf_token).encode()
+                content = HTML.replace('__CSRF__', self.server.csrf_token).replace('__SHOT_FIELDS__', json.dumps(SHOT_FIELD_GROUPS, ensure_ascii=True).replace('<', '\\u003c')).encode()
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Content-Length', str(len(content)))

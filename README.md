@@ -40,6 +40,8 @@ python3 app.py --ask-key --open --port 0
 
 O catálogo define os parâmetros suportados. O modelo inicial é Veo Lite quando disponível, com duração máxima do modelo, 1080p quando disponível, vertical 9:16 e sem áudio. Outros modelos podem oferecer limites diferentes. A estimativa só aparece quando o catálogo tem um preço por segundo conhecido para a combinação.
 
+HeyGen Video 1 sempre inclui áudio. Ao escolhê-lo, a página mostra **Com áudio (obrigatório)** e o servidor envia `generate_audio: true`, inclusive para pedidos vindos de uma aba antiga. Modelos com áudio opcional continuam permitindo **Sem áudio** e **Com áudio**. Nos demais, a página mostra **Definido pelo modelo** e não envia uma configuração de áudio. O campo `generate_audio: false` do catálogo, sozinho, não garante uma saída silenciosa.
+
 **Verificar prompt** usa uma chamada de texto ao OpenRouter e pode consumir créditos; não cria vídeo. **Gerar vídeo** repete a verificação no servidor e envia uma única geração paga se o pedido for aprovado. O custo final do vídeo é o informado pela API. Uma falha ou resposta inválida na verificação impede o envio de vídeo. O verificador não garante identificar todos os pedidos e as regras do provedor continuam aplicáveis.
 
 A política permite romance e intimidade não explícita entre adultos, nudez artística não sexual de adultos e violência fictícia de cinema. Mantém restrições para sexualização de menores, sexo explícito, violência sexual, violência extrema envolvendo vítimas ou eventos reais e instruções de dano. Não altera filtros do HeyGen ou dos provedores OpenRouter.
@@ -58,6 +60,6 @@ export SSL_CERT_FILE="$(python3 -c 'import certifi; print(certifi.where())')"
 
 ## Validação
 
-38 testes HTTP com API simulada passaram, incluindo aprovação, bloqueio, resposta inválida, envio único, retomada, download, origem, diagnóstico do HTTP 400 e ocultação de dados sensíveis. O navegador Chromium também validou reprodução, download, recuperação de resposta interrompida e layout de celular. O catálogo público real foi consultado. Nenhuma chamada real autenticada de verificação ou geração paga foi executada no ambiente de desenvolvimento: a chave não está configurada nele. A precisão do classificador e a qualidade dos vídeos não foram validadas.
+49 testes HTTP com API simulada passaram, incluindo aprovação, bloqueio, resposta inválida, envio único, retomada, download, origem, diagnóstico do HTTP 400, ocultação de dados sensíveis e configuração de áudio obrigatório/opcional/definido pelo modelo. O navegador Chromium também validou reprodução, download, recuperação de resposta interrompida, opções de áudio, ausência de reenvio e layout de celular. O catálogo público real foi consultado. Nenhuma chamada real autenticada de verificação ou geração paga foi executada no ambiente de desenvolvimento: a chave não está configurada nele. A precisão do classificador e a qualidade dos vídeos não foram validadas.
 
 Mais detalhes estão em [INTERFACE.md](INTERFACE.md).

@@ -25,6 +25,8 @@ export SSL_CERT_FILE="$(python3 -c 'import certifi; print(certifi.where())')"
 
 O catálogo do OpenRouter define as durações, resoluções, formatos e suporte a áudio. O modelo inicial é `google/veo-3.1-lite`, quando disponível, com o máximo de duração anunciado pelo modelo, 1080p se disponível, vertical 9:16 e sem áudio. Você pode trocar os parâmetros e modelos. A estimativa de vídeo só aparece quando há um SKU por segundo conhecido para a combinação; não inclui o custo de verificação. Os valores efetivos são os retornados pelo provedor.
 
+HeyGen Video 1 exige uma faixa de áudio: a página mantém **Com áudio (obrigatório)** selecionado e o servidor envia `generate_audio: true`. Para modelos com áudio opcional, você pode escolher **Sem áudio** ou **Com áudio**. Quando o modelo não permite configurar essa opção e não há uma regra específica confirmada, o app mostra **Definido pelo modelo** e omite `generate_audio` da requisição. O valor `false` no catálogo não significa, por si só, que a saída é silenciosa.
+
 **Verificar prompt** faz uma chamada de texto ao modelo `openai/gpt-oss-safeguard-20b`; pode consumir uma pequena parte do saldo, mas não cria vídeo. O resultado se refere à descrição verificada. Alterar o texto limpa esse resultado.
 
 **Gerar vídeo** verifica novamente a descrição no servidor. A resposta precisa ser um JSON completo e consistente que aprove o pedido. Uma recusa, falta de credencial, falha de rede ou resposta inválida interrompe o fluxo antes do POST de vídeo. Quando aprovado, o servidor envia uma única geração paga, consulta o status e baixa o MP4. A página mostra a prévia, o custo informado pelo OpenRouter e o botão de download.
@@ -41,10 +43,12 @@ Se um trabalho com ID confirmado sofrer interrupção, clique em **Retomar**. Is
 
 ## Validação realizada
 
-38 testes HTTP com provedor simulado passaram: verificação antes do vídeo, recusa, falha de rede, JSON inválido, consistência e completude do veredito, interrupção antes do envio, parâmetros do catálogo, proteção de origem, envio único, retomada, download por faixas, diagnóstico de erros HTTP e ocultação de dados sensíveis.
+49 testes HTTP com provedor simulado passaram: verificação antes do vídeo, recusa, falha de rede, JSON inválido, consistência e completude do veredito, interrupção antes do envio, parâmetros do catálogo, proteção de origem, envio único, retomada, download por faixas, diagnóstico de erros HTTP, ocultação de dados sensíveis e áudio obrigatório/opcional/definido pelo modelo. A regra de HeyGen Video 1 não foi estendida a Avatar IV.
 
 HTTP 400 em uma criação de vídeo significa pedido rejeitado: a página mostra a mensagem estruturada do provedor quando disponível. Falhas de rede continuam identificadas como envios possivelmente interrompidos, sem repetição automática. A mensagem detalhada de um erro antigo descartada por uma versão anterior não pode ser recuperada do histórico local.
 
 O fluxo também passou no Chromium com um MP4 real de teste: verificação sem criar vídeo, bloqueio, descarte de respostas antigas após editar o texto, recuperação de resposta interrompida sem duplicar geração, reprodução, download idêntico, resolução máxima do catálogo, recuperação de falha do catálogo e layout em 320 pixels sem rolagem horizontal. Nenhuma exceção JavaScript ocorreu.
+
+A correção de áudio também passou no Chromium: HeyGen mantém áudio obrigatório inclusive no botão de máximos; modelos opcionais permitem escolher; os demais omitem a configuração. Cada geração simulada enviou um único POST, inclusive com cliques duplicados, e um HTTP 400 não provocou repetição automática.
 
 O catálogo público real foi consultado e confirmou Veo Lite com até 8 segundos e 1080p, além da disponibilidade do modelo de verificação. Esses dados não comprovam a disponibilidade para uma conta específica. Nenhuma geração paga ou chamada real autenticada de verificação foi executada: a chave não está configurada neste ambiente na nuvem. Para usar no Mac, forneça-a apenas no Terminal local.

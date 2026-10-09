@@ -4,15 +4,16 @@ Abra uma página no seu Mac para escrever prompts, verificar sua descrição, ge
 
 ## Abrir no Mac
 
-Depois de extrair `video-interface.zip` em Downloads, execute no Terminal:
+Depois de clonar este repositório para `~/video-interface`, execute no Terminal:
 
 ```bash
-python3 "$HOME/Downloads/video-interface/app.py" --ask-key --open
+cd "$HOME/video-interface"
+python3 app.py --ask-key --open --port 0
 ```
 
 O programa pede a chave OpenRouter de forma oculta e abre seu navegador. A chave fica apenas na memória do processo local e não é salva em arquivo nem enviada à página. Se a chave já estiver configurada em `OPENROUTER_API_KEY`, o programa usa essa configuração. Aperte Enter sem informar uma chave para apenas visualizar a página; os botões de API ficam indisponíveis.
 
-Mantenha o Terminal aberto. Para encerrar, use Ctrl+C. Se a porta estiver ocupada, acrescente `--port 8002`. Para abrir sem lançar o navegador automaticamente, omita `--open` e use o endereço mostrado pelo Terminal no navegador desse mesmo computador.
+Mantenha o Terminal aberto. Para encerrar, use Ctrl+C. `--port 0` escolhe uma porta disponível. Para abrir sem lançar o navegador automaticamente, omita `--open` e use o endereço mostrado pelo Terminal no navegador desse mesmo computador.
 
 O projeto requer Python 3.12 ou mais recente, sem instalação de dependências. No Mac com Python 3.14 instalado, usa automaticamente o pacote `certifi` se ele estiver disponível e se `SSL_CERT_FILE` não estiver configurado. A verificação TLS permanece ativa. Se seu Python ainda apresentar erro de certificado, configure no mesmo Terminal:
 
